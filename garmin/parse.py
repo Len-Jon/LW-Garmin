@@ -26,7 +26,7 @@ def parse_workout(line: str):
     plan = {'distance': '', 'time': '', 'pace': {}}
     # target and pace
     if str.endswith(target, "\'"):
-        plan['time'] = target
+        plan['time'] = str2seconds(target)
         plan['pace']['km'] = pace_str
     elif str.endswith(target, "K"):
         plan['distance'] = int(target.replace('K', '000'))
@@ -35,10 +35,11 @@ def parse_workout(line: str):
         plan['distance'] = int(target)
         plan['pace']['km'] = seconds2str(str2seconds(pace_str) * 2.5)
     plan['pace']['400m'] = seconds2str(str2seconds(plan['pace']['km']) / 2.5)
-    plan['rest'] = rest
-    plan['repeat'] = int(repeat)
-    print(f"[DEBUG] {line:30} 圈速 {plan['pace']['400m']}")
-
+    if rest is not None:
+        plan['rest'] = rest
+    if repeat is not None:
+        plan['repeat'] = int(repeat)
+    print(f"  {line:25} 圈速 {plan['pace']['400m']}")
     return plan
 
 

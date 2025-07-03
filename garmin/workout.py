@@ -1,5 +1,5 @@
-from parse import *
-from type_dict import *
+from .parse import *
+from .type_dict import *
 
 workout_json = {
     "sportType": {
@@ -37,7 +37,7 @@ def create_workout(plan):
     child_id = 1  # 维护循环id
     workout_list = [warmup_step]
     for x in parse_plan(plan):
-        if x['repeat']:
+        if 'repeat' in x:
             running = create_step(step_id, step_order + 1, 'interval', 'distance', x['distance'], x['pace']['km'],
                                   child_id=child_id, description='单圈' + x['pace']['400m'])  # 跑
             rest = create_step(step_id + 1, step_order + 2, 'rest', 'time', str2seconds(x['rest']),
@@ -48,17 +48,18 @@ def create_workout(plan):
             child_id += 1
             workout_list.append(r)
         else:
-            if x['distance']:
+            if x.get('distance'):
                 t = 'distance'
                 v = x['distance']
             else:
                 t = 'time'
-                v = str2seconds(x['time'])
-            running = create_step(step_id, step_order, 'interval', t, v, x['pace']['km'], description='单圈' + x['pace']['400m'])
+                v = x['time']
+            running = create_step(step_id, step_order, 'interval', t, v, x['pace']['km'],
+                                  description='单圈' + x['pace']['400m'])
             step_id += 1
             step_order += 1
             workout_list.append(running)
-            if x['rest'] is not None:
+            if 'rest' in x:
                 workout_list.append(create_step(step_id, step_order, 'rest', 'time', str2seconds(x['rest'])))
                 step_id += 1
                 step_order += 1
