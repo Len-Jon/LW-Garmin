@@ -1,13 +1,14 @@
 from openai import OpenAI
 from .prompt import get_prompt
+import os
 
 
-def get_plans(pic_url: str, group: str, model_config: dict) -> str:
+def get_plans(pic_url: str, group: str) -> str:
     # 初始化OpenAI客户端
     client = OpenAI(
         # 如果没有配置环境变量，请用百炼API Key替换：api_key="sk-xxx"
-        api_key=model_config["api_key"],
-        base_url=model_config["base_url"]
+        api_key=os.getenv("API_KEY"),
+        base_url=os.getenv("BASE_URL")
     )
 
     reasoning_content = ""  # 定义完整思考过程
@@ -16,7 +17,7 @@ def get_plans(pic_url: str, group: str, model_config: dict) -> str:
 
     # 创建聊天完成请求
     completion = client.chat.completions.create(
-        model=model_config["model_name"],
+        model=os.getenv("MODEL_NAME"),
         messages=[
             {
                 "role": "user",

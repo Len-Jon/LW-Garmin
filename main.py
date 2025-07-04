@@ -19,7 +19,7 @@ def main():
 
     if pic_url := args.pic:
         print('[INFO] loading model...')
-        plan_txt = pic2plan.open_ai.get_plans(pic_url, account['group'], account['model'])
+        plan_txt = pic2plan.open_ai.get_plans(pic_url, account['group'])
     else:
         print('[INFO] loading plan.yml...')
         plan_txt = open('plan.yml', 'r')

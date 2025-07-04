@@ -23,30 +23,28 @@ pip install -r requirements.txt
 
 1. 填写account.json
 
-   ```json
-   {
-     "username": "这里填账户",
-     "password": "这里填密码"
-   }
-   ```
-
-   如果需要使用大模型，
+    ```json
+    {
+      "username": "这里填账户",
+      "password": "这里填密码"
+    }
+    ```
 
 2. 填写plan.yml
 
-   ```yaml
-   Tue: |
-     400@1'20"[1'30"R]*8
-     800@1'22"[2'R]*4
-     1200@1'24"[3'R]*2
-   Thu: |
-     2K@4'20"
-     6K@4'10"[3'R]
-     4K@3'50"[3'R]
-     2K@3'40"
-   Sun: |
-     90'@4'10"
-   ```
+    ```yaml
+    Tue: |
+      400@1'20"[1'30"R]*8
+      800@1'22"[2'R]*4
+      1200@1'24"[3'R]*2
+    Thu: |
+      2K@4'20"
+      6K@4'10"[3'R]
+      4K@3'50"[3'R]
+      2K@3'40"
+    Sun: |
+      90'@4'10"
+    ```
 
    可以只填写一部分
 
@@ -54,20 +52,23 @@ pip install -r requirements.txt
 
 1. 填写account.json
 
-  ```json
-  {
-    "username": "这里填账户",
-    "password": "这里填密码",
-    "group": "这里填组别",
-    "model": {
-      "model_name": "qvq-max",
-      "api_key": "sk-0ec33c99834e4f6aa4b6a9d25ede6908",
-      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
-    }
+   ```json
+   {
+     "username": "这里填账户",
+     "password": "这里填密码",
+     "group": "这里填组别"
    }
-  ```
+   ```
+2. 填写.env文件
 
-2. 复制公众号的图片
+    填写自己的配置，推荐qvq-max，每次大概消耗2200tokens
+    ```dotenv
+    MODEL_NAME=
+    BASE_URL=
+    API_KEY=
+    ```
+
+3. 复制公众号的图片地址
 
 ## 使用
 
@@ -80,4 +81,4 @@ python main.py --pic https://... # 复制公众号的图片链接，调用大模
 ## TODO
 
 - [x] 大模型处理图片
-- - [ ] 本地OCR
+- [ ] 本地OCR
