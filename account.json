@@ -1,0 +1,9 @@
+{
+  "username": "",
+  "password": "",
+  "model": {
+    "model_name": "[可选]",
+    "api_key": "[可选]",
+    "base_url": "[可选]"
+  }
+}
