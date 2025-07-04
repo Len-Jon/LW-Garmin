@@ -1,6 +1,3 @@
 garth
 PyYAML
-langchain-openai
-langchain-core
-pillow
 openai

@@ -1,8 +1,8 @@
 from openai import OpenAI
-from .prompt import prompt_word
+from .prompt import get_prompt
 
 
-def get_plan(pic_path, model_config):
+def get_plans(pic_url: str, group: str, model_config: dict) -> str:
     # 初始化OpenAI客户端
     client = OpenAI(
         # 如果没有配置环境变量，请用百炼API Key替换：api_key="sk-xxx"
@@ -16,7 +16,7 @@ def get_plan(pic_path, model_config):
 
     # 创建聊天完成请求
     completion = client.chat.completions.create(
-        model=model_config["model_name"],  # 此处以 qvq-max 为例，可按需更换模型名称
+        model=model_config["model_name"],
         messages=[
             {
                 "role": "user",
@@ -24,10 +24,10 @@ def get_plan(pic_path, model_config):
                     {
                         "type": "image_url",
                         "image_url": {
-                            "url": pic_path
+                            "url": pic_url
                         },
                     },
-                    {"type": "text", "text": prompt_word},
+                    {"type": "text", "text": get_prompt(group)},
                 ],
             },
         ],

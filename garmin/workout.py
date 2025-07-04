@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from .parse import *
 from .type_dict import *
 
@@ -29,43 +31,6 @@ workout_json = {
     "estimateType": None,
     "isWheelchair": False
 }
-
-
-def create_workout(plan):
-    step_order = 2
-    step_id = 4  # 维护步骤ID，好像也不重要，这个是佳明数据库里最后重新赋值的
-    child_id = 1  # 维护循环id
-    workout_list = [warmup_step]
-    for x in parse_plan(plan):
-        if 'repeat' in x:
-            running = create_step(step_id, step_order + 1, 'interval', 'distance', x['distance'], x['pace']['km'],
-                                  child_id=child_id, description='单圈' + x['pace']['400m'])  # 跑
-            rest = create_step(step_id + 1, step_order + 2, 'rest', 'time', str2seconds(x['rest']),
-                               child_id=child_id)  # 停
-            r = create_repeat(step_id + 2, step_order, child_id, x['repeat'], [running, rest])  # 循环
-            step_id += 3
-            step_order += 3
-            child_id += 1
-            workout_list.append(r)
-        else:
-            if x.get('distance'):
-                t = 'distance'
-                v = x['distance']
-            else:
-                t = 'time'
-                v = x['time']
-            running = create_step(step_id, step_order, 'interval', t, v, x['pace']['km'],
-                                  description='单圈' + x['pace']['400m'])
-            step_id += 1
-            step_order += 1
-            workout_list.append(running)
-            if 'rest' in x:
-                workout_list.append(create_step(step_id, step_order, 'rest', 'time', str2seconds(x['rest'])))
-                step_id += 1
-                step_order += 1
-    cooldown_step['stepOrder'] = step_order
-    workout_list.append(cooldown_step)
-    return workout_list
 
 
 def create_repeat(step_id, step_order, child_id, repeat, workout_steps=None, skip=False):
@@ -115,7 +80,50 @@ def create_step(step_id, step_order, step_type, end_condition_type, value, targe
     return step
 
 
+def create_workout_steps(plan: Union[str, list]) -> list:
+    step_order = 2
+    step_id = 4  # 维护步骤ID，好像也不重要，这个是佳明数据库里最后重新赋值的
+    child_id = 1  # 维护循环id
+    workout_list = [warmup_step]
+    for x in parse_plans(plan):
+        if 'repeat' in x:
+            running = create_step(step_id, step_order + 1, 'interval', 'distance', x['distance'], x['pace']['km'],
+                                  child_id=child_id, description='单圈' + x['pace']['400m'])  # 跑
+            rest = create_step(step_id + 1, step_order + 2, 'rest', 'time', str2seconds(x['rest']),
+                               child_id=child_id)  # 停
+            r = create_repeat(step_id + 2, step_order, child_id, x['repeat'], [running, rest])  # 循环
+            step_id += 3
+            step_order += 3
+            child_id += 1
+            workout_list.append(r)
+        else:
+            if x.get('distance'):
+                t = 'distance'
+                v = x['distance']
+            else:
+                t = 'time'
+                v = x['time']
+            running = create_step(step_id, step_order, 'interval', t, v, x['pace']['km'],
+                                  description='单圈' + x['pace']['400m'])
+            step_id += 1
+            step_order += 1
+            workout_list.append(running)
+            if 'rest' in x:
+                workout_list.append(create_step(step_id, step_order, 'rest', 'time', str2seconds(x['rest'])))
+                step_id += 1
+                step_order += 1
+    cooldown_step['stepOrder'] = step_order
+    workout_list.append(cooldown_step)
+    return workout_list
+
+
 def create_workout_json(plan: str, workout_name="LW"):
-    workout_json['workoutSegments'][0]['workoutSteps'] = create_workout(plan)
+    """
+    获取请求的payload
+    :param plan: 单次workout的原始模式
+    :param workout_name: 课程名称
+    :return: payload
+    """
+    workout_json['workoutSegments'][0]['workoutSteps'] = create_workout_steps(plan)
     workout_json['workoutName'] = workout_name
-    return workout_json
+    return deepcopy(workout_json)

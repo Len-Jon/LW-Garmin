@@ -1,4 +1,5 @@
 import re
+from typing import Union
 
 
 def str2seconds(src: str) -> int:
@@ -14,14 +15,17 @@ def seconds2str(src: (int, float)) -> str:
     return f"{int(src // 60)}'{int(src % 60)}\""
 
 
-# 解析函数
-def parse_workout(line: str):
+def parse_plan(line: str) -> dict:
+    """
+    :param line: 单行处理
+    :return: 返回结构化的训练描述
+    """
     line = line.strip().replace(' ', '')
     line = re.sub(r'[‘’]', "'", line)
     line = re.sub(r'[“”]', '"', line)
     match = re.match(r'([^@]+)@([^\[]+)(?:\[(.*?)R])?\*?(\d+)?', line)
     if not match:
-        return None
+        return {}
     target, pace_str, rest, repeat = match.groups()
     plan = {'distance': '', 'time': '', 'pace': {}}
     # target and pace
@@ -44,5 +48,12 @@ def parse_workout(line: str):
 
 
 # Python 3.8及以上可用，3.7以下自己改改
-def parse_plan(src: str) -> list:
-    return [r for x in src.split('\n') if (r := parse_workout(x))]
+def parse_plans(src: Union[str, list]) -> list:
+    """
+    :param src: 原始计划字符串或列表
+    :return: 结构化计划列表
+    """
+    if type(src) is str:
+        return [r for x in src.split('\n') if (r := parse_plan(x))]
+    else:
+        return [r for x in src if (r := parse_plan(x)) and r.keys()]

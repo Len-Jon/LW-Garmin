@@ -26,13 +26,13 @@ pip install -r requirements.txt
    ```json
    {
      "username": "这里填账户",
-     "password": "这里填组别"
+     "password": "这里填密码"
    }
    ```
 
    如果需要使用大模型，
 
-2. 填写plan.yaml
+2. 填写plan.yml
 
    ```yaml
    Tue: |
@@ -54,25 +54,30 @@ pip install -r requirements.txt
 
 1. 填写account.json
 
-   ```json
-   {
-     "username": "这里填账户",
-     "password": "这里填组别",
-     "model": {
-       "model_name": "模型名称"
-     }
+  ```json
+  {
+    "username": "这里填账户",
+    "password": "这里填密码",
+    "group": "这里填组别",
+    "model": {
+      "model_name": "qvq-max",
+      "api_key": "sk-0ec33c99834e4f6aa4b6a9d25ede6908",
+      "base_url": "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    }
    }
-   ```
+  ```
 
 2. 复制公众号的图片
 
 ## 使用
 
 ```bash
-python main.py
+python main.py # 读取plan.yml并同步到佳明
+python main.py --debug # 仅读取plan.yml，不同步到佳明
+python main.py --pic https://... # 复制公众号的图片链接，调用大模型解析
 ```
 
 ## TODO
 
-- [ ] 本地OCR
-- [ ] 大模型处理图片
+- [x] 大模型处理图片
+- - [ ] 本地OCR
