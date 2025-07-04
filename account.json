@@ -1,7 +1,7 @@
 {
   "username": "",
   "password": "",
-  "group": "[组别，可选，识别图片才用]"
+  "group": "[组别，可选，识别图片才用]",
   "model": {
     "model_name": "[可选]",
     "api_key": "[可选]",
