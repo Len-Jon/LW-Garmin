@@ -59,7 +59,7 @@ pip install -r requirements.txt
      "username": "这里填账户",
      "password": "这里填组别",
      "model": {
-       "modelName": "模型名称"
+       "model_name": "模型名称"
      }
    }
    ```

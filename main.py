@@ -5,23 +5,39 @@ import garth
 import yaml
 
 import garmin
+import pic2plan.qianwen
 
 
 def main():
+    account = json.load(open("account.json", encoding="utf-8"))
+
     dataList = []
-    with open('plan.yaml', 'r') as config_file:
-        try:
-            # 加载 YAML 文件内容
-            plan = yaml.safe_load(config_file)
-        except yaml.YAMLError as exc:
-            print(exc)
-        for k,v in plan.items():
+    # with open('plan.yaml', 'r') as config_file:
+    #     try:
+    #         # 加载 YAML 文件内容
+    #         plan = yaml.safe_load(config_file)
+    #     except yaml.YAMLError as exc:
+    #         print(exc)
+    #     for k,v in plan.items():
+    #         if len(v) > 0:
+    #             print(k)
+    #             dataList.append(deepcopy(garmin.create_workout_json(v, 'LW-' + k)))
+
+    # 加载 YAML 文件内容
+    config = pic2plan.qianwen.get_plan('https://mmbiz.qpic.cn/sz_mmbiz_jpg/OsnnrVAkYsxzpsX4ETexRyZJdl1SUfiazkZ2lXyZ0iacMYCz7YmZX5P2hINsM3u8AcWClqb2uiaAW3dMUUhdxd0jw/640?wx_fmt=jpeg&from=appmsg&tp=webp&wxfrom=5&wx_lazy=1',account['model'])
+    try:
+        # 加载 YAML 文件内容
+        plan = yaml.safe_load(config)
+        for k, v in plan.items():
             if len(v) > 0:
                 print(k)
                 dataList.append(deepcopy(garmin.create_workout_json(v, 'LW-' + k)))
+    except yaml.YAMLError as exc:
+        print(exc)
+        exit(1)
+
     x = input('确认计划是否正确，发送至CONNECT输入1，否则取消发送\n')
     if x == '1':
-        account = json.load(open("account.json", encoding="utf-8"))
         cn_username = account['username']
         cn_password = account['password']
         assert cn_username, "username is required"
