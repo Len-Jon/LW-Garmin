@@ -78,7 +78,7 @@ pip install -r requirements.txt
 
 1. 填写.env文件或配置环境变量
 
-    填写自己的配置，推荐qvq-max，每次大概消耗2200tokens
+    填写自己的配置
     ```dotenv
     MODEL_NAME=
     BASE_URL=
@@ -88,10 +88,17 @@ pip install -r requirements.txt
     例如
 
     ```dotenv
-    MODEL_NAME=qvq-max
+    MODEL_NAME=qwen-vl-plus
     BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-    API_KEY=sk-ABCDEFG
+    #API_KEY=sk-000
     ```
+
+    > 比较好用的模型推荐：
+    >
+    > - [大模型服务平台百炼控制台](https://bailian.console.aliyun.com/?tab=model#/model-market?capabilities=["IU"]&z_type_={"capabilities"%3A"array"})：图片理解的模型基本都行
+    > - [Moonshot AI - 开放平台](https://platform.moonshot.cn/docs/introduction)：名字带vision的都能用，但是preview版本不一定保留，可以换别的
+    >
+    > 并非越精确越好，比如qwen-vl-max肯定要比qwen-vl-plus要更精确的，但后者秒出结果，尤其是qvq-max，消耗token还多几百，思考过程还不能跳过。
 
 2. 复制公众号的图片地址，执行命令时粘贴
 

@@ -1,4 +1,7 @@
-from openai import OpenAI
+import base64
+
+import httpx
+from openai import OpenAI, BadRequestError
 from .prompt import get_prompt
 import os
 
@@ -16,28 +19,55 @@ def get_plans(pic_url: str, group: str) -> str:
     is_answering = False  # 判断是否结束思考过程并开始回复
 
     # 创建聊天完成请求
-    completion = client.chat.completions.create(
-        model=os.getenv("MODEL_NAME"),
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": pic_url
+    try:
+        completion = client.chat.completions.create(
+            model=os.getenv("MODEL_NAME"),
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": pic_url
+                            },
                         },
-                    },
-                    {"type": "text", "text": get_prompt(group)},
-                ],
-            },
-        ],
-        stream=True,
-        # 解除以下注释会在最后一个chunk返回Token使用量
-        stream_options={
-            "include_usage": True
-        }
-    )
+                        {"type": "text", "text": get_prompt(group)},
+                    ],
+                },
+            ],
+            stream=True,
+            # 解除以下注释会在最后一个chunk返回Token使用量
+            stream_options={
+                "include_usage": True
+            }
+        )
+    except BadRequestError as e:
+        print('[WARN]', e)
+        print('[WARN] 尝试下载图片后上传...')
+        image_data = base64.b64encode(httpx.get(pic_url).content).decode("utf-8")
+        completion = client.chat.completions.create(
+            model=os.getenv("MODEL_NAME"),
+            messages=[
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url":  f"data:image/jpeg;base64,{image_data}"
+                            },
+                        },
+                        {"type": "text", "text": get_prompt(group)},
+                    ],
+                },
+            ],
+            stream=True,
+            # 解除以下注释会在最后一个chunk返回Token使用量
+            stream_options={
+                "include_usage": True
+            }
+        )
 
     print("\n" + "=" * 20 + "思考过程" + "=" * 20 + "\n")
 
@@ -58,9 +88,10 @@ def get_plans(pic_url: str, group: str) -> str:
                     print("\n" + "=" * 20 + "完整回复" + "=" * 20 + "\n")
                     is_answering = True
                 # 打印回复过程
-                print(delta.content, end='', flush=True)
-                answer_content += delta.content
+                if delta.content is not None:
+                    print(delta.content, end='', flush=True)
+                    answer_content += delta.content
     # print("=" * 20 + "完整思考过程" + "=" * 20 + "\n")
     # print(reasoning_content)
     # print("=" * 20 + "完整回复" + "=" * 20 + "\n")
-    return answer_content
+    return answer_content.replace("```", "").replace("yaml","")
