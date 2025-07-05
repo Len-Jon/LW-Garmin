@@ -11,10 +11,17 @@ import ocr.open_ai
 import sys
 from importlib.metadata import version
 
+# 除了命令行，也可以在这里指定图片地址，如果满足以下两个条件
+# 1. 指定了--pic或-p
+# 2. PIC_URL非空
+# 才会通过LLM解析图片中的计划
+# 命令行指定地址优先级更高，二者均为空则执行本地
+PIC_URL = ''
+
 urllib3.disable_warnings()
 
 parser = argparse.ArgumentParser(description='main')
-parser.add_argument("--pic", "-p", type=str, help="传入图片路径")
+parser.add_argument("--pic", "-p", const=PIC_URL, nargs='?', type=str, help="传入图片路径")
 parser.add_argument("--stop_before", "-s", type=str, choices=['garmin', 'g', 'device', 'd'],
                     help="停止位置 默认不指定全部运行 garmin:仅分析计划 device:发送的佳明但不发送到设备")
 
@@ -36,8 +43,14 @@ def main():
     with open("account.json", "r", encoding="utf-8") as f:
         account = json.load(f)
     # 判断参数 从公众号图片/本地文字获取
+    print(args.pic)
+    if args.pic is not None and args.pic.strip() == '':
+        print('\033[93m[WARN][0] 指定了--pic/-p，但PIC_URL命令行和代码均为空串，请补充\033[0m')
+        args.pic = input().strip()
+        if not args.pic.strip():
+            exit(1)
     if pic_url := args.pic:
-        print('[INFO][0] loading plan from URL by LLM...', flush=True)
+        print('[INFO][0] Loading plan from URL by LLM...', flush=True)
         group = account.get('group', '').strip()
         if not group:
             print('\033[93m[WARN][0] 当前调用大模型获取训练计划，但account.json中未配置组别，请补充\033[0m')
@@ -48,13 +61,13 @@ def main():
                 json.dump(account, f, ensure_ascii=False, indent=4)
         plan_txt = ocr.open_ai.get_plans(pic_url, account['group'])
     else:
-        print('[INFO][0] loading plan from plan.yml...')
+        print('[INFO][0] Loading plan from plan.yml...')
         with open('plan.yml', 'r') as f:
             plan_txt = f.read()
     try:
         # 加载 YAML 格式的计划内容
         plan = yaml.safe_load(plan_txt)
-        print('[INFO][0] loaded.')
+        print('[INFO][0] Loaded.')
         data_list = []
         for k, v in plan.items():
             if len(v) > 0:
