@@ -1,4 +1,5 @@
-PyYAML~=6.0.2
-openai~=1.93.0
-httpx~=0.28.1
+PyYAML
+openai
+httpx
 garth
+urllib3

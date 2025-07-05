@@ -1,5 +1,6 @@
 import argparse
 import json
+import urllib3
 
 import garth
 import yaml
@@ -10,10 +11,12 @@ import ocr.open_ai
 import sys
 from importlib.metadata import version
 
+urllib3.disable_warnings()
+
 parser = argparse.ArgumentParser(description='main')
 parser.add_argument("--pic", type=str, help="传入图片路径")
 parser.add_argument("--stop_before", type=str, choices=['garmin', 'device'],
-                    help="停止位置\n不指定全部运行\ngarmin:仅分析计划\ndevice:发送的佳明但不发送到设备")
+                    help="停止位置 默认不指定全部运行 garmin:仅分析计划 device:发送的佳明但不发送到设备")
 
 
 def main():
@@ -66,8 +69,6 @@ def main():
                   """ +
               "添加此项参数后可能会有警告，可忽略" +
               "\033[0m")
-        import urllib3
-        urllib3.disable_warnings()
 
     print('[INFO] Logining in...', flush=True)
     cn_username = account['username']
