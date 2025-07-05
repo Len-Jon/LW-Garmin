@@ -4,12 +4,14 @@
 
 国际区自己改一下域名即可
 
-当前Python版本3.9
+Python版本3.9
 
 当前支持
 
 - [x] 手动输入识别
 - [x] 大模型图片识别（需要自己配置api_key）
+- [ ] 删除旧的训练计划（设备上的需要自己手动删除，进入训练-Start-DOWN*3选择删除）
+- [x] 推送至设备
 - [ ] 表格识别
 - [ ] 本地OCR识别
 
@@ -115,4 +117,36 @@ python main.py --debug # 传入公众号的图片链接，仅调用大模型解�
 ```
 
 如果大模型识别不准确（周日的长距离`'`识别成`"`），返回的结果可以复制到plan.yml自己手动调整一下
+
+# 可能遇到的BUG
+
+因为garth不太稳定
+
+0.4.x版本无法获取设备信息
+
+0.5.x版本有SSL报错
+
+修改`.venv/lib/python3.10/site-packages/garth/http.py`
+
+```diff
+        self.last_resp = self.sess.request(
+            method,
+            url,
+            headers=headers,
+            timeout=self.timeout,
++           verify=False,
+            **kwargs,
+        )
+```
+
+临时解决，但是有警告提示，不影响。
+
+看着不舒服就在main前边全局忽略警告
+
+```python
+import urllib3
+urllib3.disable_warnings()
+```
+
+
 

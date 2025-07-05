@@ -119,7 +119,7 @@ def create_workout_steps(plan: Union[str, list]) -> list:
 
 def create_workout_json(plan: str, workout_name="LW"):
     """
-    获取请求的payload
+    获取创建课程请求的payload
     :param plan: 单次workout的原始模式
     :param workout_name: 课程名称
     :return: payload
