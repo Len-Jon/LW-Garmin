@@ -38,6 +38,14 @@ def main():
     # 判断参数 从公众号图片/本地文字获取
     if pic_url := args.pic:
         print('[INFO][0] loading plan from URL by LLM...', flush=True)
+        group = account.get('group', '').strip()
+        if not group:
+            print('\033[93m[WARN][0] 当前调用大模型获取训练计划，但account.json中未配置组别，请补充\033[0m')
+            group = input("请输入组别: ").strip()
+            account['group'] = group
+            with open('account.json', 'w', encoding='utf-8') as f:
+                # noinspection PyTypeChecker
+                json.dump(account, f, ensure_ascii=False, indent=4)
         plan_txt = ocr.open_ai.get_plans(pic_url, account['group'])
     else:
         print('[INFO][0] loading plan from plan.yml...')
