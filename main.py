@@ -1,142 +1,235 @@
 import argparse
 import json
-import urllib3
-
-import garth
 import yaml
-
-import garmin
-import ocr.open_ai
-
 import sys
 from importlib.metadata import version
+from typing import Optional, Dict, Any, List
 
-# 除了命令行，也可以在这里指定图片地址，如果满足以下两个条件
-# 1. 指定了--pic或-p
-# 2. PIC_URL非空
-# 才会通过LLM解析图片中的计划
-# 命令行指定地址优先级更高，二者均为空则执行本地
-PIC_URL = ''
+import urllib3
+import garth
+import ocr.open_ai
+import garmin
 
+# 禁用 SSL 警告
 urllib3.disable_warnings()
 
-parser = argparse.ArgumentParser(description='main')
-parser.add_argument("--pic", "-p", const=PIC_URL, nargs='?', type=str, help="传入图片路径")
-parser.add_argument("--stop_before", "-s", type=str, choices=['garmin', 'g', 'device', 'd'],
-                    help="停止位置 默认不指定全部运行 garmin:仅分析计划 device:发送的佳明但不发送到设备")
+# 全局常量，此处也可以填入图片URL，需要调用LLM解析可空值调用--pic/-p
+DEFAULT_PIC_URL = ''
+
+LOG_PREFIXES = {
+    'INFO': '\033[92m[INFO]\033[0m',
+    'WARN': '\033[93m[WARN]\033[0m',
+    'ERROR': '\033[91m[ERROR]\033[0m'
+}
 
 
-# 重写 session 的 request 方法，强制加上 verify=False
-def patch_request(method):
-    orig_request = method
+# 配置参数解析器
+def configure_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description='训练计划同步脚本')
+    parser.add_argument("--pic", "-p", const=DEFAULT_PIC_URL, nargs='?', type=str,
+                        help="传入图片路径或URL")
+    parser.add_argument("--stop_before", "-s", type=str,
+                        choices=['garmin', 'g', 'device', 'd'],
+                        help="停止位置: garmin(仅分析) | device(发送到Garmin不发设备)")
+    return parser
 
-    def new_request(*args, **kwargs):
-        kwargs['verify'] = False
-        return orig_request(*args, **kwargs)
 
-    return new_request
+# 日志打印函数
+def log(level: str, message: str):
+    prefix = LOG_PREFIXES.get(level.upper(), "")
+    print(f"{prefix} {message}", flush=True)
 
 
-def main():
-    args = parser.parse_args()
-    # 载入账户信息
-    with open("account.json", "r", encoding="utf-8") as f:
-        account = json.load(f)
-    # 判断参数 从公众号图片/本地文字获取
-    print(args.pic)
-    if args.pic is not None and args.pic.strip() == '':
-        print('\033[93m[WARN][0] 指定了--pic/-p，但PIC_URL命令行和代码均为空串，请补充\033[0m')
-        args.pic = input().strip()
-        if not args.pic.strip():
-            exit(1)
-    if pic_url := args.pic:
-        print('[INFO][0] Loading plan from URL by LLM...', flush=True)
+# 补充空 pic 输入
+def handle_missing_pic(args: argparse.Namespace) -> None:
+    if args.pic is not None and not args.pic.strip():
+        log("WARN", "[0] 指定了--pic/-p，但PIC_URL为空，请补充")
+        user_input = input("请输入图片地址: ").strip()
+        if not user_input:
+            log("ERROR", "输入不能为空，程序退出。")
+            sys.exit(1)
+        args.pic = user_input
+
+
+# 加载 account.json
+def load_account() -> dict:
+    try:
+        with open("account.json", "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        log("ERROR", f"加载 account.json 失败: {e}")
+        sys.exit(1)
+
+
+# 保存组别信息
+def save_group_to_account(account: dict, group: str) -> None:
+    account['group'] = group
+    try:
+        with open('account.json', 'w', encoding='utf-8') as f:
+            json.dump(account, f, ensure_ascii=False, indent=4)
+    except Exception as e:
+        log("ERROR", f"写入 account.json 失败: {e}")
+        sys.exit(1)
+
+
+# 获取训练计划文本
+def get_plan_text(args: argparse.Namespace, account: dict) -> str:
+    pic_url = args.pic
+    if pic_url:
+        log("INFO", "[0] Loading plan from URL by LLM...")
         group = account.get('group', '').strip()
         if not group:
-            print('\033[93m[WARN][0] 当前调用大模型获取训练计划，但account.json中未配置组别，请补充\033[0m')
+            log("WARN", "[0] 当前调用大模型获取训练计划，但account.json中未配置组别，请补充")
             group = input("请输入组别: ").strip()
-            account['group'] = group
-            with open('account.json', 'w', encoding='utf-8') as f:
-                # noinspection PyTypeChecker
-                json.dump(account, f, ensure_ascii=False, indent=4)
-        plan_txt = ocr.open_ai.get_plans(pic_url, account['group'])
+            save_group_to_account(account, group)
+        try:
+            return ocr.open_ai.get_plans(pic_url, group)
+        except Exception as e:
+            log("ERROR", f"[0] OCR 解析失败: {e}")
+            sys.exit(1)
     else:
-        print('[INFO][0] Loading plan from plan.yml...')
-        with open('plan.yml', 'r') as f:
-            plan_txt = f.read()
+        log("INFO", "[0] Loading plan from plan.yml...")
+        try:
+            with open('plan.yml', 'r', encoding='utf-8') as f:
+                return f.read()
+        except FileNotFoundError as e:
+            log("ERROR", f"plan.yml 文件未找到: {e}")
+            sys.exit(1)
+
+
+# 解析并生成 workout 数据
+def parse_plan(plan_txt: str) -> List[Any]:
     try:
-        # 加载 YAML 格式的计划内容
         plan = yaml.safe_load(plan_txt)
-        print('[INFO][0] Loaded.')
         data_list = []
         for k, v in plan.items():
             if len(v) > 0:
                 print(k)
                 data_list.append(garmin.create_workout_json(v, 'LW-' + k))
+        return data_list
     except yaml.YAMLError as exc:
-        print(exc)
-        exit(1)
+        log("ERROR", f"YAML 解析失败: {exc}")
+        sys.exit(1)
 
-    # 仅解析时此处退出
-    if args.stop_before in ['garmin', 'g']:
-        print('[INFO][0] EXIT before post to garmin.')
-        exit(0)
 
-    print('[INFO][1] Logining in garmin...', flush=True)
-    cn_username = account['username']
-    cn_password = account['password']
-    assert cn_username, "username is required"
-    assert cn_password, "password is required"
+# 修复SSL Error警告
+def init_garth() -> None:
     garth.configure(domain="garmin.cn")
-    garth.client.sess.request = patch_request(garth.client.sess.request)  # 修复一个奇怪的问题
 
+    # 修复 garth 的 request 方法
+    def patch_request(method):
+        def new_request(*args, **kwargs):
+            kwargs['verify'] = False
+            return method(*args, **kwargs)
+
+        return new_request
+
+    garth.client.sess.request = patch_request(garth.client.sess.request)
+
+
+# 登录 Garmin
+def login_garmin(account: dict) -> None:
+    cn_username = account.get('username')
+    cn_password = account.get('password')
+    if not cn_username or not cn_password:
+        log("ERROR", "账号密码缺失，请检查 account.json")
+        sys.exit(1)
+
+    log("INFO", "[1] Logining in garmin...")
     garth.login(cn_username, cn_password)
-    # 一星期一次 早过期了没必要保存
-    # garth.save('~/.garth')
-    print(f'[INFO][1] Logged in.', flush=True)
+    log("INFO", "[1] Logged in.")
 
-    print('[INFO][1] Deleting old workouts...', flush=True)
-    for wk in garth.client.connectapi(
-            '/workout-service/workouts?start=1&limit=999&myWorkoutsOnly=true&sharedWorkoutsOnly=false&orderBy=WORKOUT_NAME&orderSeq=ASC&includeAtp=false'):
-        if wk['workoutName'].startswith('LW-'):
-            garth.client.connectapi(f"/workout-service/workout/{wk['workoutId']}", "POST",
-                                    headers={'X-HTTP-Method-Override': 'DELETE'})
-    print('[INFO][1] Deleted old workouts.', flush=True)
 
-    print('[INFO][1] Creating new workouts...', flush=True)
+# 删除旧 workout
+def delete_old_workouts():
+    log("INFO", "[1] Deleting old workouts...")
+    try:
+        for wk in garth.client.connectapi(
+                '/workout-service/workouts?start=1&limit=999&myWorkoutsOnly=true&sharedWorkoutsOnly=false&orderBy=WORKOUT_NAME&orderSeq=ASC&includeAtp=false'
+        ):
+            if wk['workoutName'].startswith('LW-'):
+                garth.client.connectapi(
+                    f"/workout-service/workout/{wk['workoutId']}",
+                    "POST",
+                    headers={'X-HTTP-Method-Override': 'DELETE'}
+                )
+        log("INFO", "[1] Deleted old workouts.")
+    except Exception as e:
+        log("ERROR", f"[1] 删除旧数据失败: {e}")
+
+
+# 创建新 workout
+def create_new_workouts(data_list: list) -> list:
+    log("INFO", "[1] Creating new workouts...")
     workout_id_list = []
     for data in data_list:
-        workout_resp = garth.client.connectapi('/workout-service/workout', "POST", json=data)
-        if workout_resp is not None:
-            workout_id_list.append(workout_resp['workoutId'])
-        else:
-            print(f'[ERROR][1] {workout_resp}')
-    print('[INFO][1] Created workouts.', flush=True)
+        try:
+            workout_resp = garth.client.connectapi('/workout-service/workout', "POST", json=data)
+            if workout_resp:
+                workout_id_list.append(workout_resp['workoutId'])
+            else:
+                log("ERROR", f"[1] 创建 Workout 失败: {workout_resp}")
+        except Exception as e:
+            log("ERROR", f"[1] 创建 Workout 失败: {e}")
+    log("INFO", "[1] Created workouts.")
+    return workout_id_list
+
+
+# 推送至设备
+def post_to_device(workout_id_list: list):
+    log("INFO", "[2] Posting to device.")
+    try:
+        user_profile = garth.UserProfile.get()
+        device_id = garth.client.connectapi(
+            f'/device-service/deviceservice/device-info/all/{user_profile.display_name}'
+        )[0]['baseDeviceDTO']['deviceId']
+        garth.client.connectapi(
+            '/device-service/devicemessage/messages',
+            "POST",
+            json=garmin.create_message_json(device_id, workout_id_list)
+        )
+        log("INFO", "[2] Posted.")
+    except Exception as e:
+        log("ERROR", f"[2] 推送设备失败: {e}")
+
+
+# 主函数
+def main():
+    parser = configure_parser()
+    args = parser.parse_args()
+
+    handle_missing_pic(args)
+    account = load_account()
+    plan_txt = get_plan_text(args, account)
+
+    try:
+        data_list = parse_plan(plan_txt)
+    except Exception as e:
+        log("ERROR", f"解析训练计划失败: {e}")
+        sys.exit(1)
+
+    if args.stop_before in ['garmin', 'g']:
+        log("INFO", "[0] EXIT before post to garmin.")
+        sys.exit(0)
+
+    init_garth()
+    login_garmin(account)
+    delete_old_workouts()
+    workout_id_list = create_new_workouts(data_list)
 
     if args.stop_before in ['device', 'd']:
-        print('[INFO][1] Exit before post to device.')
-        exit(0)
-    # 检查版本
+        log("INFO", "[1] Exit before post to device.")
+        sys.exit(0)
+
+    # 检查版本兼容性
     garth_version_str = version("garth")
     garth_version = tuple(map(int, garth_version_str.split('.')))
-    if sys.version_info < (3, 10) and garth_version < (0, 5):
-        print("\033[93m" +
-              "[WARN][2] 推送设备功能garth版本需0.5, 0.5以下版本会报错，安装此版本garth需要Python 3.10以上\n" +
-              f"当前: Python {sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}, " +
-              f"garth {garth_version_str}\n" +
-              "[WARN][2] Exit before post to device."
-              "\033[0m")
-        exit(1)
+    if garth_version < (0, 5):
+        log("WARN",
+            f"[2] 推送设备功能garth需 >=0.5, 此版本要求Python需 >=3.10, 当前 garth {garth_version_str}")
+        sys.exit(1)
 
-    print('[INFO][2] Posting to device.')
-    user_profile = garth.UserProfile.get()
-    device_id = \
-        garth.client.connectapi(f'/device-service/deviceservice/device-info/all/{user_profile.display_name}')[0][
-            'baseDeviceDTO']['deviceId']
-    # 发送至设备
-    garth.client.connectapi('/device-service/devicemessage/messages', "POST",
-                            json=garmin.create_message_json(device_id, workout_id_list))
-    print('[INFO][2] Posted.')
+    post_to_device(workout_id_list)
 
 
 if __name__ == '__main__':

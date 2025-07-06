@@ -115,16 +115,31 @@ pip install -r requirements.txt
 5. 将训练课程推送到手表
 
 - `--stop_before`/`-s`：可选参数，指定此参数时不会运行完整程序
-  - garmin：在登陆佳明账号前停止
-  - device：在将训练课程推送到手表停止
+  - `garmin`/`g`：在登陆佳明账号前停止
+  - `device`/`d`：在将训练课程推送到手表停止
 
-- `--pic`/`-p`：指定此参数时将访问链接中的图片，若不指定则默认识别手动输入的`plan.yml`
+- `--pic`/`-p`：指定此参数时将访问链接中的图片（复制公众号推文中训练计划的图片的地址），若不指定则默认识别手动输入的`plan.yml`
+
+例如：
 
 ```bash
+## 解析本地plan.yml的计划，并执行完整过程
 python main.py
-# 指定参数可以选择执行方式
-python main.py --pic http://...(复制公众号的地址)
-python main.py --stop_before garmin
+
+## 解析公众号图片中的计划，运行时终端输入指定地址
+python main.py -p
+
+## 解析公众号图片中的计划，运行时参数传入指定地址
+python main.py -p http://... 
+
+## 解析本地plan.yml的计划，不同步到佳明课程训练
+python main.py -s g
+
+## 解析本地plan.yml的计划，同步到佳明课程，但不推送设备
+python main.py -s d
+
+## 解析公众号图片中的计划，同步到佳明课程，但不推送设备
+python main.py -s d -p
 ```
 
 如果大模型识别不准确（周日的长距离`'`识别成`"`），返回的结果可以复制到plan.yml自己手动调整一下
