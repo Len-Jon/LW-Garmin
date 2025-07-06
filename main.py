@@ -31,6 +31,9 @@ def configure_parser() -> argparse.ArgumentParser:
     parser.add_argument("--stop_before", "-s", type=str,
                         choices=['garmin', 'g', 'device', 'd'],
                         help="停止位置: garmin(仅分析) | device(发送到Garmin不发设备)")
+    parser.add_argument( "--ps", '-ps', type=str,
+                        choices=['garmin', 'g', 'device', 'd'],
+                        help="停止位置: garmin(仅分析) | device(发送到Garmin不发设备)")
     return parser
 
 
@@ -197,6 +200,10 @@ def post_to_device(workout_id_list: list):
 def main():
     parser = configure_parser()
     args = parser.parse_args()
+
+    if args.ps is not None:
+        args.stop_before = args.ps.strip()
+        args.pic = DEFAULT_PIC_URL
 
     handle_missing_pic(args)
     account = load_account()
