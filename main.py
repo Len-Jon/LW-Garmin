@@ -27,13 +27,11 @@ LOG_PREFIXES = {
 def configure_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description='训练计划同步脚本')
     parser.add_argument("--pic", "-p", const=DEFAULT_PIC_URL, nargs='?', type=str,
-                        help="传入图片路径或URL")
+                        help="解析图片中的训练计划，传入图片路径或URL")
     parser.add_argument("--stop_before", "-s", type=str,
                         choices=['garmin', 'g', 'device', 'd'],
-                        help="停止位置: garmin(仅分析) | device(发送到Garmin不发设备)")
-    parser.add_argument( "--ps", '-ps', type=str,
-                        choices=['garmin', 'g', 'device', 'd'],
-                        help="停止位置: garmin(仅分析) | device(发送到Garmin不发设备)")
+                        help="指定停止位置: garmin(仅分析) | device(发送到Garmin不发设备)")
+    parser.add_argument("--ps", '-ps', type=str, choices=['garmin', 'g', 'device', 'd'])
     return parser
 
 

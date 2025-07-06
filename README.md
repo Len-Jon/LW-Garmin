@@ -140,6 +140,8 @@ python main.py -s d
 
 ## 解析公众号图片中的计划，同步到佳明课程，但不推送设备
 python main.py -s d -p
+### 等效于
+python main.py -ps d
 ```
 
 如果大模型识别不准确（周日的长距离`'`识别成`"`），返回的结果可以复制到plan.yml自己手动调整一下
