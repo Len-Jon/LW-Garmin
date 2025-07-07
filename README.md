@@ -92,7 +92,7 @@ pip install -r requirements.txt
     例如
 
     ```dotenv
-    MODEL_NAME=qwen-vl-plus
+    MODEL_NAME=qwen-vl-max
     BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
     #API_KEY=sk-000
     ```
@@ -102,7 +102,7 @@ pip install -r requirements.txt
     > - [大模型服务平台百炼控制台](https://bailian.console.aliyun.com/?tab=model#/model-market?capabilities=["IU"]&z_type_={"capabilities"%3A"array"})：图片理解的模型基本都行
     > - [Moonshot AI - 开放平台](https://platform.moonshot.cn/docs/introduction)：名字带vision的都能用，但是preview版本不一定保留，可以换别的
     >
-    > 并非越精确越好，比如qwen-vl-max肯定要比qwen-vl-plus要更精确的，但后者秒出结果，尤其是qvq-max，消耗token还多几百，思考过程还不能跳过。
+    > 并非越精确越好，比如qvq-max比qwen-vl-max更精确，但后者秒出结果，前者思考过程无法跳过，消耗更多token。
 
 2. 复制公众号的图片地址，执行命令时粘贴
 
