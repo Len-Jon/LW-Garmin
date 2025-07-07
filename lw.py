@@ -216,8 +216,10 @@ def main():
 
     try:
         workout_json_list = parse_plan(plan_txt)
+        if len(workout_json_list) == 0:
+            log("WARN", "计划列表为空，请检查输入源plan.yml或pic_url是否有效")
     except Exception as e:
-        log("ERROR", f"解析训练计划失败: {e}")
+        log("ERROR", f"请检查输入源plan.yml或pic_url是否有效")
         sys.exit(1)
 
     if args.stop_before in ['garmin', 'g']:
