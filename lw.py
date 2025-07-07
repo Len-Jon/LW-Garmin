@@ -91,7 +91,10 @@ def get_plan_text(args: argparse.Namespace, account: dict) -> str:
             group = input("请输入组别: ").strip()
             save_group_to_account(account, group)
         try:
-            return ocr.open_ai.get_plans(pic_url, group)
+            result = ocr.open_ai.get_plans(pic_url, group)
+            with open(PLAN_YML, 'w', encoding='utf-8') as f:
+                f.write(result)
+            return result
         except Exception as e:
             log("ERROR", f"[0] OCR 解析失败: {e}")
             sys.exit(1)
