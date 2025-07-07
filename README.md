@@ -128,24 +128,24 @@ pip install -r requirements.txt
 
 ```bash
 ## 解析本地plan.yml的计划，并执行完整过程
-python main.py
+python lw.py
 
 ## 解析公众号图片中的计划，运行时终端输入指定地址
-python main.py -p
+python lw.py -p
 
 ## 解析公众号图片中的计划，运行时参数传入指定地址
-python main.py -p http://... 
+python lw.py -p http://... 
 
 ## 解析本地plan.yml的计划，不同步到佳明课程训练
-python main.py -s g
+python lw.py -s g
 
 ## 解析本地plan.yml的计划，同步到佳明课程，但不推送设备
-python main.py -s d
+python lw.py -s d
 
 ## 解析公众号图片中的计划，同步到佳明课程，但不推送设备
-python main.py -p -s d
+python lw.py -p -s d
 ### 等效于
-python main.py -ps d
+python lw.py -ps d
 ```
 
 如果大模型识别不准确（周日的长距离`'`识别成`"`），返回的结果可以复制到`plan.yml`，自己手动调整一下
