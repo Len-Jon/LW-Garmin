@@ -15,10 +15,11 @@ def seconds2str(src: (int, float)) -> str:
     return f"{int(src // 60)}'{int(src % 60)}\""
 
 
-def parse_plan(line: str) -> dict:
+def get_step(line: str) -> dict:
     """
-    :param line: 单行处理
-    :return: 返回结构化的训练描述
+    单行训练步骤文本的结构化
+    :param line: 单行结构化训练步骤
+    :return: 返回结构化的单个步骤
     """
     line = line.strip().replace(' ', '')
     line = re.sub(r'[‘’]', "'", line)
@@ -47,13 +48,13 @@ def parse_plan(line: str) -> dict:
     return plan
 
 
-# Python 3.8及以上可用，3.7以下自己改改
-def parse_plans(src: Union[str, list]) -> list:
+def get_step_list(src: Union[str, list]) -> list:
     """
-    :param src: 原始计划字符串或列表
-    :return: 结构化计划列表
+    拆分单次课程的步骤文本并结构化
+    :param src: 多行训练步骤文本
+    :return: 结构化的步骤列表
     """
     if type(src) is str:
-        return [r for x in src.split('\n') if (r := parse_plan(x))]
+        return [r for x in src.split('\n') if (r := get_step(x))]
     else:
-        return [r for x in src if (r := parse_plan(x)) and r.keys()]
+        return [r for x in src if (r := get_step(x)) and r.keys()]

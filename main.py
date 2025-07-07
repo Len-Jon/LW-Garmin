@@ -1,14 +1,16 @@
 import argparse
 import json
-import yaml
+import os
 import sys
 from importlib.metadata import version
-from typing import Optional, Dict, Any, List
+from typing import Any, List
 
-import urllib3
 import garth
-import ocr.open_ai
+import urllib3
+import yaml
+
 import garmin
+import ocr.open_ai
 
 # 禁用 SSL 警告
 urllib3.disable_warnings()
@@ -21,6 +23,11 @@ LOG_PREFIXES = {
     'WARN': '\033[93m[WARN]\033[0m',
     'ERROR': '\033[91m[ERROR]\033[0m'
 }
+
+# 获取当前脚本所在的目录
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+ACCOUNT_JSON = os.path.join(CURRENT_DIR, 'account.json')
+PLAN_YML = os.path.join(CURRENT_DIR, 'plan.yml')
 
 
 # 配置参数解析器
@@ -55,10 +62,10 @@ def handle_missing_pic(args: argparse.Namespace) -> None:
 # 加载 account.json
 def load_account() -> dict:
     try:
-        with open("account.json", "r", encoding="utf-8") as f:
+        with open(ACCOUNT_JSON, "r", encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        log("ERROR", f"加载 account.json 失败: {e}")
+        log("ERROR", f"加载 {ACCOUNT_JSON} 失败: {e}")
         sys.exit(1)
 
 
@@ -66,10 +73,10 @@ def load_account() -> dict:
 def save_group_to_account(account: dict, group: str) -> None:
     account['group'] = group
     try:
-        with open('account.json', 'w', encoding='utf-8') as f:
+        with open(ACCOUNT_JSON, 'w', encoding='utf-8') as f:
             json.dump(account, f, ensure_ascii=False, indent=4)
     except Exception as e:
-        log("ERROR", f"写入 account.json 失败: {e}")
+        log("ERROR", f"写入 {ACCOUNT_JSON} 失败: {e}")
         sys.exit(1)
 
 
@@ -89,25 +96,25 @@ def get_plan_text(args: argparse.Namespace, account: dict) -> str:
             log("ERROR", f"[0] OCR 解析失败: {e}")
             sys.exit(1)
     else:
-        log("INFO", "[0] Loading plan from plan.yml...")
+        log("INFO", f"[0] Loading plan from {PLAN_YML}...")
         try:
-            with open('plan.yml', 'r', encoding='utf-8') as f:
+            with open(PLAN_YML, 'r', encoding='utf-8') as f:
                 return f.read()
         except FileNotFoundError as e:
-            log("ERROR", f"plan.yml 文件未找到: {e}")
+            log("ERROR", f"{PLAN_YML} 文件未找到: {e}")
             sys.exit(1)
 
 
-# 解析并生成 workout 数据
+# 解析并生成所有 workout json 数据
 def parse_plan(plan_txt: str) -> List[Any]:
     try:
-        plan = yaml.safe_load(plan_txt)
-        data_list = []
-        for k, v in plan.items():
+        plan_yml = yaml.safe_load(plan_txt)
+        workout_list = []
+        for k, v in plan_yml.items():
             if len(v) > 0:
                 print(k)
-                data_list.append(garmin.create_workout_json(v, 'LW-' + k))
-        return data_list
+                workout_list.append(garmin.create_workout_json(v, 'LW-' + k))
+        return workout_list
     except yaml.YAMLError as exc:
         log("ERROR", f"YAML 解析失败: {exc}")
         sys.exit(1)
@@ -159,13 +166,13 @@ def delete_old_workouts():
         log("ERROR", f"[1] 删除旧数据失败: {e}")
 
 
-# 创建新 workout
-def create_new_workouts(data_list: list) -> list:
+# 将解析的训练课程推送到佳明
+def post_to_garmin(workout_json_list: list) -> list:
     log("INFO", "[1] Creating new workouts...")
     workout_id_list = []
-    for data in data_list:
+    for workout_json in workout_json_list:
         try:
-            workout_resp = garth.client.connectapi('/workout-service/workout', "POST", json=data)
+            workout_resp = garth.client.connectapi('/workout-service/workout', "POST", json=workout_json)
             if workout_resp:
                 workout_id_list.append(workout_resp['workoutId'])
             else:
@@ -208,7 +215,7 @@ def main():
     plan_txt = get_plan_text(args, account)
 
     try:
-        data_list = parse_plan(plan_txt)
+        workout_json_list = parse_plan(plan_txt)
     except Exception as e:
         log("ERROR", f"解析训练计划失败: {e}")
         sys.exit(1)
@@ -220,7 +227,7 @@ def main():
     init_garth()
     login_garmin(account)
     delete_old_workouts()
-    workout_id_list = create_new_workouts(data_list)
+    workout_id_list = post_to_garmin(workout_json_list)
 
     if args.stop_before in ['device', 'd']:
         log("INFO", "[1] Exit before post to device.")

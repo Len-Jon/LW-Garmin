@@ -1,5 +1,5 @@
 # 步骤类型
-step_type_dict = {
+STEP_TYPE_DICT = {
     "warmup": {
         "stepTypeId": 1,
         "stepTypeKey": "warmup",
@@ -32,7 +32,7 @@ step_type_dict = {
     }
 }
 # 目标类型，通常只有配速目标
-target_type_dict = {
+TARGET_TYPE_DICT = {
     "no.target": {
         "workoutTargetTypeId": 1,
         "workoutTargetTypeKey": "no.target",
@@ -45,7 +45,7 @@ target_type_dict = {
     }
 }
 # 判断完成类型 通常只有时间和距离两种，组循环另外判断
-condition_type_dict = {
+CONDITION_TYPE_DICT = {
     "time": {
         "conditionTypeId": 2,
         "conditionTypeKey": "time",
@@ -66,7 +66,7 @@ condition_type_dict = {
     },
 }
 
-warmup_step = {
+WARMUP_STEP = {
     "stepId": 1,
     "stepOrder": 1,
     "stepType": {
@@ -89,7 +89,7 @@ warmup_step = {
     }
 }
 
-cooldown_step = {
+COOLDOWN_STEP = {
     "stepId": 3,
     "stepOrder": 7,
     "stepType": {
