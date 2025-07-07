@@ -4,7 +4,9 @@
 
 国际区自己改一下域名即可
 
-**Python version >= 3.8**
+**最小版本 Python version >= 3.8（推送到手表功能不可用）**
+
+**推荐版本 Python version >= 3.10**
 
 当前支持
 
@@ -114,11 +116,13 @@ pip install -r requirements.txt
 4. 新建佳明训练课程，以`LW-<星期>`的方式命名
 5. 将训练课程推送到手表
 
-- `--stop_before`/`-s`：可选参数，指定此参数时不会运行完整程序
+- `--pic, -p [PIC]`：指定此参数时将访问链接中的图片（复制公众号推文中训练计划的图片的地址），若不指定则默认识别`plan.yml`中的计划
+
+- `--stop_before, -s {g, d}`：可选参数，指定此参数时不会运行完整程序
   - `garmin`/`g`：在登陆佳明账号前停止
   - `device`/`d`：在将训练课程推送到手表停止
 
-- `--pic`/`-p`：指定此参数时将访问链接中的图片（复制公众号推文中训练计划的图片的地址），若不指定则默认识别手动输入的`plan.yml`
+- `--ps, -ps {g, d}`：二合一
 
 例如：
 
@@ -139,42 +143,18 @@ python main.py -s g
 python main.py -s d
 
 ## 解析公众号图片中的计划，同步到佳明课程，但不推送设备
-python main.py -s d -p
+python main.py -p -s d
 ### 等效于
 python main.py -ps d
 ```
 
-如果大模型识别不准确（周日的长距离`'`识别成`"`），返回的结果可以复制到plan.yml自己手动调整一下
+如果大模型识别不准确（周日的长距离`'`识别成`"`），返回的结果可以复制到`plan.yml`，自己手动调整一下
 
 # 可能遇到的BUG
 
 因为garth不太稳定
 
-0.4.x版本无法获取设备信息
+0.4.x版本无法获取设备信息，因此无法推送到设备
 
-0.5.x版本有SSL报错
-
-修改`.venv/lib/python3.10/site-packages/garth/http.py`
-
-```diff
-        self.last_resp = self.sess.request(
-            method,
-            url,
-            headers=headers,
-            timeout=self.timeout,
-+           verify=False,
-            **kwargs,
-        )
-```
-
-临时解决，但是有警告提示，不影响。
-
-看着不舒服就在main前边全局忽略警告
-
-```python
-import urllib3
-urllib3.disable_warnings()
-```
-
-
+0.5.x版本有SSL报错，重写了request添加了参数来临时解决，并屏蔽了警告提示。
 
