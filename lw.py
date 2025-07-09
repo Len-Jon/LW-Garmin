@@ -11,6 +11,7 @@ import yaml
 
 import garmin
 import ocr.open_ai
+from garth_sports import gs
 
 # 禁用 SSL 警告
 urllib3.disable_warnings()
@@ -231,6 +232,13 @@ def main():
 
     init_garth()
     login_garmin(account)
+    # # post to sports
+    # gs.login_sports()
+    # for course in workout_json_list:
+    #     id = gs.post_to_sports(course)
+    #     print(id)
+
+
     delete_old_workouts()
     workout_id_list = post_to_garmin(workout_json_list)
 
