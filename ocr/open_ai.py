@@ -10,18 +10,17 @@ def get_plans(pic_url: str, group: str) -> str:
     # 初始化OpenAI客户端
     client = OpenAI(
         # 如果没有配置环境变量，请用百炼API Key替换：api_key="sk-xxx"
-        api_key=os.getenv("API_KEY"),
-        base_url=os.getenv("BASE_URL")
+        api_key=os.getenv("LW_API_KEY"),
+        base_url=os.getenv("LW_BASE_URL")
     )
 
     reasoning_content = ""  # 定义完整思考过程
     answer_content = ""  # 定义完整回复
     is_answering = False  # 判断是否结束思考过程并开始回复
-
     # 创建聊天完成请求
     try:
         completion = client.chat.completions.create(
-            model=os.getenv("MODEL_NAME"),
+            model=os.getenv("LW_MODEL_NAME"),
             messages=[
                 {
                     "role": "user",
@@ -43,8 +42,8 @@ def get_plans(pic_url: str, group: str) -> str:
             }
         )
     except BadRequestError as e:
-        print('[WARN]', e)
-        print('[WARN] 尝试下载图片后上传...')
+        print('\033[93m[WARN]\033[0m [0]', e)
+        print('\033[93m[WARN]\033[0m [0] 尝试下载图片后上传...')
         image_data = base64.b64encode(httpx.get(pic_url).content).decode("utf-8")
         completion = client.chat.completions.create(
             model=os.getenv("MODEL_NAME"),

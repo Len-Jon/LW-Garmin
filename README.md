@@ -25,26 +25,31 @@
 pip install -r requirements.txt
 ```
 
-## 佳明账户信息填写
+## 环境变量配置
 
-填写`account.json`
+填写`.env`并选用，或配置环境变量
 
-```json
-{
-  "username": "必填-这里填账户",
-  "password": "必填-这里填密码",
-  "group": "可选-这里填组别，调用大模型识别时会选取"
-}
+```dotenv
+# 佳明账号 必填
+LW_USERNAME=
+LW_PASSWORD=
+
+# 图片调用大模型时填写组别 非必填
+LW_GROUP=
+LW_MODEL_NAME=
+LW_BASE_URL=
+LW_API_KEY=
 ```
 
 例如
 
-```json
-{
-  "username": "wwqkbb@qq.com",
-  "password": "garmin_password",
-  "group": "A+"
-}
+```dotenv
+LW_USERNAME=wwqkbb@qq.com
+LW_PASSWORD=PASSWORDd
+LW_GROUP=A+
+LW_MODEL_NAME=qwen-vl-max
+LW_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+LW_API_KEY=sk-000
 ```
 
 # 使用方式
@@ -84,17 +89,19 @@ pip install -r requirements.txt
 
     填写自己的配置
     ```dotenv
-    MODEL_NAME=
-    BASE_URL=
-    API_KEY=
+    LW_GROUP=
+    LW_MODEL_NAME=
+    LW_BASE_URL=
+    LW_API_KEY=
     ```
 
     例如
 
     ```dotenv
-    MODEL_NAME=qwen-vl-max
-    BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-    #API_KEY=sk-000
+    LW_GROUP=
+    LW_MODEL_NAME=qwen-vl-max
+    LW_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+    LW_API_KEY=sk-000
     ```
 
     > 比较好用的模型推荐：

@@ -1,5 +1,4 @@
 import argparse
-import json
 import os
 import sys
 from importlib.metadata import version
@@ -23,10 +22,9 @@ LOG_PREFIXES = {
     'WARN': '\033[93m[WARN]\033[0m',
     'ERROR': '\033[91m[ERROR]\033[0m'
 }
-
+GROUP_LIST = ['A+', 'A1', 'A2', 'B1', 'B2', 'C1', 'C2', 'D']
 # 获取当前脚本所在的目录
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-ACCOUNT_JSON = os.path.join(CURRENT_DIR, 'account.json')
 PLAN_YML = os.path.join(CURRENT_DIR, 'plan.yml')
 
 
@@ -58,38 +56,18 @@ def handle_missing_pic(args: argparse.Namespace) -> None:
             sys.exit(1)
         args.pic = user_input
 
-
-# 加载 account.json
-def load_account() -> dict:
-    try:
-        with open(ACCOUNT_JSON, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError) as e:
-        log("ERROR", f"加载 {ACCOUNT_JSON} 失败: {e}")
-        sys.exit(1)
-
-
-# 保存组别信息
-def save_group_to_account(account: dict, group: str) -> None:
-    account['group'] = group
-    try:
-        with open(ACCOUNT_JSON, 'w', encoding='utf-8') as f:
-            json.dump(account, f, ensure_ascii=False, indent=4)
-    except Exception as e:
-        log("ERROR", f"写入 {ACCOUNT_JSON} 失败: {e}")
-        sys.exit(1)
-
-
 # 获取训练计划文本
-def get_plan_text(args: argparse.Namespace, account: dict) -> str:
+def get_plan_text(args: argparse.Namespace) -> str:
     pic_url = args.pic
     if pic_url:
         log("INFO", "[0] Loading plan from URL by LLM...")
-        group = account.get('group', '').strip()
+        group = os.getenv("LW_GROUP") # 环境变量优先
         if not group:
-            log("WARN", "[0] 当前调用大模型获取训练计划，但account.json中未配置组别，请补充")
-            group = input("请输入组别: ").strip()
-            save_group_to_account(account, group)
+            log("WARN", "[0] 当前调用大模型获取训练计划，但环境中未配置组别，请补充")
+            group = input("请输入组别[A+, A1, A2, B1, B2, C1, C2, D]: ").strip()
+            if group not in GROUP_LIST:
+                log('WARN', "[0] 当前组别未收录，可能会出现问题")
+        log("INFO", f"[0] Current group: {group}")
         try:
             result = ocr.open_ai.get_plans(pic_url, group)
             with open(PLAN_YML, 'w', encoding='utf-8') as f:
@@ -139,11 +117,11 @@ def init_garth() -> None:
 
 
 # 登录 Garmin
-def login_garmin(account: dict) -> None:
-    cn_username = account.get('username')
-    cn_password = account.get('password')
+def login_garmin() -> None:
+    cn_username = os.getenv("LW_USERNAME")
+    cn_password = os.getenv("LW_PASSWORD")
     if not cn_username or not cn_password:
-        log("ERROR", "账号密码缺失，请检查 account.json")
+        log("ERROR", "账号密码缺失，请检查 环境变量")
         sys.exit(1)
 
     log("INFO", "[1] Logining in garmin...")
@@ -214,15 +192,14 @@ def main():
         args.pic = DEFAULT_PIC_URL
 
     handle_missing_pic(args)
-    account = load_account()
-    plan_txt = get_plan_text(args, account)
+    plan_txt = get_plan_text(args)
 
     try:
         workout_json_list = parse_plan(plan_txt)
         if len(workout_json_list) == 0:
-            log("WARN", "计划列表为空，请检查输入源plan.yml或pic_url是否有效")
+            log("WARN", "[0] 计划列表为空，请检查输入源plan.yml或pic_url是否有效")
     except Exception as e:
-        log("ERROR", f"请检查输入源plan.yml或pic_url是否有效")
+        log("ERROR", f"[0] 请检查输入源plan.yml或pic_url是否有效")
         sys.exit(1)
 
     if args.stop_before in ['garmin', 'g']:
@@ -230,7 +207,7 @@ def main():
         sys.exit(0)
 
     init_garth()
-    login_garmin(account)
+    login_garmin()
     delete_old_workouts()
     workout_id_list = post_to_garmin(workout_json_list)
 
