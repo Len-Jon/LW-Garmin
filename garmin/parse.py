@@ -30,10 +30,14 @@ def get_step(line: str) -> dict:
     target, pace_str, rest, repeat = match.groups()
     plan = {'distance': '', 'time': '', 'pace': {}}
     # target and pace
-    if str.endswith(target, "\'"):
+    if target.endswith("'") or target.endswith('"'):
+        # 以时间为目标通常是LSD，不会以秒为单位，大模型识别可能会有问题，处理一下，这里假定都是以90分钟为单位
+        if target.endswith('"'):
+            print("  \033[93m识别结果可能有误，尝试修复\033[0m")
+            target = target.replace('"', '"')  # 秒换分
         plan['time'] = str2seconds(target)
         plan['pace']['km'] = pace_str
-    elif str.endswith(target, "K"):
+    elif target.endswith("K"):
         plan['distance'] = int(target.replace('K', '000'))
         plan['pace']['km'] = pace_str
     else:
